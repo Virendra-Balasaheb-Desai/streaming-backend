@@ -148,6 +148,97 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200,user,"Access token refreshed."))
 })
 
+const changeUserPassword = asyncHandler(async (req, res) => {
+    const {oldPassword, newPassword} = req.body;
 
+    if(!oldPassword || !newPassword) throw new ApiError(400,"Old password or new password is missing");
 
-export { registerUser, loginUser, logoutUser, refreshAccessToken }
+    const userData = await User.findById(req.userId);
+
+    if(!userData) throw new ApiError(400,"User doesn't exists.");
+
+    const verifiedPassword = await userData.isPasswordVerify(oldPassword);
+
+    if(!verifiedPassword) throw new ApiError(400,"Incorrect old password.");
+
+    userData.password = newPassword;
+    await userData.save({validateBeforeSave:false})
+
+    return res.status(200).json(new ApiResponse(200,"","Password change successful."))
+})
+
+const getCurrentUser = asyncHandler(async (req, res) => {
+    const userData = await User.findById(req.userId).select("-password -refreshToken");
+
+    if(!userData) throw new ApiError(400,"User doesn't exist");
+
+    return res.status(200).json(new ApiResponse(200,userData,"User fetched successful."))
+})
+
+const updateUserAccount = asyncHandler(async (req, res) => {
+    const {email, fullName} = req.body;
+
+    if(!email || !fullName) throw new ApiError(400,"Email and full name is required");
+
+    const updatedUser = await User.findByIdAndUpdate(
+        req.userId,
+        {
+            $set:
+            {
+                email, 
+                fullName 
+            }
+        },
+        {
+            new:true
+        }
+    ).select("-password -refreshToken")
+
+    if(!updatedUser) throw new ApiError(500,"User updation failed");
+    
+    return res.status(200).json(new ApiResponse(200,updatedUser,"User accout updated."))
+})
+
+const updateUserAvatar = asyncHandler(async (req, res) => {
+    const avatarLocalPath = req.file?.path
+
+    if(!avatarLocalPath) throw new ApiError(400,"Unable to find file path.");
+
+    const avatar = await uploadOnCloudinary(avatarLocalPath);
+
+    if(!avatar) throw new ApiError(400,"Failed to upload file on cloud.");
+
+    const updatedUser = await User.findByIdAndUpdate(req.userId,{ $set : { avatar : avatar?.url}},{new:true})
+
+    if(!updatedUser) throw new ApiError(500,"User avatar updation failed");
+
+    return res.status(200).json(new ApiResponse(200,updatedUser,"User avatar updated."))
+})
+
+const updateUserCoverImage = asyncHandler(async (req, res) => {
+    const coverImageLocalPath = req.file?.path
+
+    if(!coverImageLocalPath) throw new ApiError(400,"Unable to find file path.");
+
+    const coverImage = await uploadOnCloudinary(coverImageLocalPath);
+
+    if(!coverImage) throw new ApiError(400,"Failed to upload file on cloud.");
+
+    const updatedUser = await User.findByIdAndUpdate(req.userId,{ $set : { coverImage : coverImage?.url}},{new:true})
+
+    if(!updatedUser) throw new ApiError(500,"User coverImage updation failed");
+
+    return res.status(200).json(new ApiResponse(200,updatedUser,"User cover image updated."))
+})
+
+export { 
+    registerUser,
+    loginUser,
+    logoutUser,
+    refreshAccessToken,
+    changeUserPassword,
+    getCurrentUser,
+    updateUserAccount,
+    updateUserAvatar,
+    updateUserCoverImage
+};
