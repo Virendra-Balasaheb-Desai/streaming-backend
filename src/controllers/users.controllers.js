@@ -4,6 +4,7 @@ import { uploadOnCloudinary } from "../utils/cloudinaryUpload.js"
 import { User } from "../models/user.models.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
 import jwt from "jsonwebtoken"
+import mongoose from "mongoose"
 
 const generateTokens = async (user) => {
     try {
@@ -237,15 +238,15 @@ const getUserChannelDetails = asyncHandler(async (req, res) => {
     
     if(!username?.trim()) throw new ApiError(401,"Username is required")
 
-    const userChannnel = await User.aggregate(
+    const userChannnel = await User.aggregate([
         {
             $match: {
-                username: username?.toLowerCase
+                username: username?.toLowerCase()
             }
         },
         {
             $lookup: {
-                from: "$subscriptions",
+                from: "subscriptions",
                 localField: "_id",
                 foreignField: "channel",
                 as: "subscribers"
@@ -253,7 +254,7 @@ const getUserChannelDetails = asyncHandler(async (req, res) => {
         },
         {
             $lookup: {
-                from: "$subscriptions",
+                from: "subscriptions",
                 localField: "_id",
                 foreignField: "subscriber",
                 as: "subscribed"
@@ -289,11 +290,60 @@ const getUserChannelDetails = asyncHandler(async (req, res) => {
                 createdAt: 1
             }
         }
-    )
+    ])
 
     if(!userChannnel) throw new ApiError(500,"Unable to fetch details")
 
     return res.status(200).json(new ApiResponse(200,userChannnel[0],"Channel details fetched successful."))
+})
+
+const getUserWatchHistory = asyncHandler(async (req, res) => {
+    
+    const history = await User.aggregate([
+        {
+            $match: {
+                _id : new mongoose.Types.ObjectId(req.userId)
+            }
+        },
+        {
+            $lookup: {
+                from: "videos",
+                localField: "watchHistory",
+                foreignField: "_id",
+                as: "watchHistory",
+                pipeline: [
+                    {
+                        $lookup: {
+                            from: "users",
+                            localField: "owner",
+                            foreignField: "_id",
+                            as: "owner",
+                            pipeline: [
+                                {
+                                    $project: {
+                                        fullName:1,
+                                        username: 1,
+                                        avatar: 1
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        $addFields: {
+                            owner : {
+                                $first: "$owner"
+                            }
+                        }
+                    }
+                ]
+            }
+        }
+    ])
+
+    if(!history) throw new ApiError(500,"Unable to fetch watch history") 
+
+    return res.status(200).json(new ApiResponse(200,history[0]?.watchHistory,"Watch history fetched successful."))
 })
 
 export { 
@@ -306,5 +356,6 @@ export {
     updateUserAccount,
     updateUserAvatar,
     updateUserCoverImage,
-    getUserChannelDetails
+    getUserChannelDetails,
+    getUserWatchHistory
 };
