@@ -38,4 +38,4 @@ router.route("/channel/:username").post(getUserChannelDetails)
 
 router.route("/watch-history").post(verifyToken,getUserWatchHistory)
 
-export { router }
+export default router;
