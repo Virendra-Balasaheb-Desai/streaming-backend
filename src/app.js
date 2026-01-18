@@ -17,10 +17,12 @@ import userRouter from "./routes/users.routes.js"
 import videoRouter from "./routes/videos.routes.js"
 import healthcheckRouter from "./routes/healthchek.routes.js"
 import playlistRouter from "./routes/playlist.routes.js"
+import tweetRouter from "./routes/tweet.routes.js"
 
 app.use("/api/v1/users",userRouter)
 app.use("/api/v1/videos",videoRouter)
 app.use("/api/v1/healthcheck",healthcheckRouter)
 app.use("/api/v1/playlists",playlistRouter)
+app.use("/api/v1/tweets",tweetRouter)
 
 export {app}
