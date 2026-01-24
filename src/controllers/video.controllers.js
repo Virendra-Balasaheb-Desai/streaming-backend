@@ -10,6 +10,53 @@ import { uploadOnCloudinary } from "../utils/cloudinaryUpload.js"
 const getAllVideos = asyncHandler(async (req, res) => {
     const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query
     //TODO: get all videos based on query, sort, pagination
+
+    const sort = sortType === "desc" ? -1 : 1;
+    const options =  {
+            page : parseInt(page) || 1,
+            limit : parseInt(limit) || 10
+    }
+
+    if(!userId || !userId.trim()) throw new ApiError(401,"Unable to get user");
+
+    let matching = {
+         owner : new mongoose.Types.ObjectId(userId)
+    };
+
+    if(query){
+        matching.$or = [
+            {
+                title:{
+                    $regex: query, $options:"i"
+                }
+            },
+            {
+                description:{
+                    $regex: query, $options:"i"
+                }
+            }           
+        ]
+    }
+
+    const pipeline = Video.aggregate(
+        [
+            {
+                $match: matching
+            },
+            {
+                $sort:{
+                    [sortBy] : sort
+                }
+            }
+        ]
+    );
+
+    const paginatedVideos = await Video.aggregatePaginate(pipeline,options);
+
+    if(!paginatedVideos) throw new ApiError(401,"Unable to get videos.");
+
+    return res.status(200).json(new ApiResponse(200,paginatedVideos,"Videos fetched successfully."))
+    
 })
 
 const publishAVideo = asyncHandler(async (req, res) => {
