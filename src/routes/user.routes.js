@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { registerUser, loginUser, logoutUser, refreshAccessToken, changeUserPassword, getCurrentUser, updateUserAvatar, updateUserCoverImage, updateUserAccount, getUserChannelDetails, getUserWatchHistory } from "../controllers/users.controllers.js";
+import { registerUser, loginUser, logoutUser, refreshAccessToken, changeUserPassword, getCurrentUser, updateUserAvatar, updateUserCoverImage, updateUserAccount, getUserChannelDetails, getUserWatchHistory, deleteUser } from "../controllers/users.controllers.js";
 import { upload } from "../middlewares/multer.middlewares.js";
 import { verifyToken } from "../middlewares/auth.middlewares.js";
 
@@ -26,16 +26,18 @@ router.route("/refreshtoken").post(refreshAccessToken)
 
 router.route("/change-password").post(verifyToken,changeUserPassword)
 
-router.route("/get-user").post(verifyToken,getCurrentUser)
+router.route("/get-user").get(verifyToken,getCurrentUser)
 
-router.route("/update-details").post(verifyToken,updateUserAccount)
+router.route("/update-details").patch(verifyToken,updateUserAccount)
 
-router.route("/update-avatar").post(verifyToken,upload.single("avatar"),updateUserAvatar)
+router.route("/update-avatar").patch(verifyToken,upload.single("avatar"),updateUserAvatar)
 
-router.route("/update-cover").post(verifyToken,upload.single("coverImage"),updateUserCoverImage)
+router.route("/update-cover").patch(verifyToken,upload.single("coverImage"),updateUserCoverImage)
 
-router.route("/channel/:username").post(getUserChannelDetails)
+router.route("/channel/:username").get(getUserChannelDetails)
 
-router.route("/watch-history").post(verifyToken,getUserWatchHistory)
+router.route("/watch-history").get(verifyToken,getUserWatchHistory)
+
+router.route("/delete").delete(verifyToken,deleteUser);
 
 export default router;

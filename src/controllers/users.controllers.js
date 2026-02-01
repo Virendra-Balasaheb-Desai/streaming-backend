@@ -346,6 +346,22 @@ const getUserWatchHistory = asyncHandler(async (req, res) => {
     return res.status(200).json(new ApiResponse(200,history[0]?.watchHistory,"Watch history fetched successful."))
 })
 
+const deleteUser = asyncHandler(async (req, res) => {
+    const userId = req.userId;
+
+    await User.findByIdAndDelete({_id:userId});
+
+    const cookieOptions = {
+        httpOnly:true,
+        secure:true
+    }
+
+    return res.status(200)
+    .cookie("accessToken","",cookieOptions)
+    .cookie("refreshToken","",cookieOptions)
+    .json(new ApiResponse(200,"","Deleted user account successfully"))
+})
+
 export { 
     registerUser,
     loginUser,
@@ -357,5 +373,6 @@ export {
     updateUserAvatar,
     updateUserCoverImage,
     getUserChannelDetails,
-    getUserWatchHistory
+    getUserWatchHistory,
+    deleteUser
 };
