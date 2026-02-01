@@ -1,5 +1,7 @@
 import mongoose from "mongoose";
 import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2";
+import { Like } from "./like.models.js";
+import { tweetSchema } from "./tweet.models.js";
 
 const commentSchema = new mongoose.Schema(
     {
@@ -22,5 +24,14 @@ const commentSchema = new mongoose.Schema(
 )
 
 commentSchema.plugin(mongooseAggregatePaginate)
+
+//Clean up after deletion like ON DELETE CASCADE
+commentSchema.post("findOneAndDelete", async function (doc) {
+    const commentId = doc._id;
+    
+    await Like.deleteMany({
+            comment: commentId
+    });
+})
 
 export const Comment = mongoose.model("Comment", commentSchema)

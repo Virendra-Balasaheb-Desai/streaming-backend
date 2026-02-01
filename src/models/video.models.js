@@ -1,5 +1,8 @@
 import {Schema,model} from "mongoose";
 import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2"; 
+import { Comment } from "./comment.models.js";
+import { Playlist } from "./playlist.models.js";
+import { Like } from "./like.models.js";
 
 const videoSchema = new Schema(
     {
@@ -43,5 +46,24 @@ const videoSchema = new Schema(
 )
 
 videoSchema.plugin(mongooseAggregatePaginate)
+
+//Clean up after deletion like ON DELETE CASCADE
+videoSchema.post("findOneAndDelete", async function (doc) {
+    const videoId = doc._id;
+    await Comment.deleteMany({
+        video: videoId
+    });
+    await Like.deleteMany({
+        video: videoId
+    });
+    await Playlist.updateMany(
+        {},//update all
+        {
+            $pull: {
+                videos: videoId
+            } 
+        }
+    );
+})
 
 export const Video = model("Video",videoSchema)

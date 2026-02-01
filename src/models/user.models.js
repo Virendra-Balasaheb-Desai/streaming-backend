@@ -1,6 +1,12 @@
 import mongoose, { Schema, model } from "mongoose";
 import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
+import { Comment } from "./comment.models.js"
+import { Video } from "./video.models.js"
+import { Like } from "./like.models.js";
+import { Playlist } from "./playlist.models.js";
+import { Subscription } from "./subscription.models.js"
+import { Tweet } from "./tweet.models.js";
 
 const userSchema = new Schema(
     {
@@ -88,5 +94,28 @@ userSchema.methods.generateRefreshToken = function () {
         }
     )
 }
+
+//Clean up after deletion like ON DELETE CASCADE
+userSchema.post("findOneAndDelete", async function() {
+    const userId = this.getFilter()._id;
+    await Comment.deleteMany({
+        owner: userId
+    });
+    await Video.deleteMany({
+        owner: userId
+    });
+    await Tweet.deleteMany({
+        owner: userId
+    });
+    await Playlist.deleteMany({
+        owner: userId
+    });
+    await Subscription.deleteMany({
+        channel: userId
+    });
+    await Like.deleteMany({
+        likeBy: userId
+    });
+})
 
 export const User = model("User", userSchema)
