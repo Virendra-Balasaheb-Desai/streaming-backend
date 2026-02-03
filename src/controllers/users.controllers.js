@@ -1,6 +1,6 @@
 import { asyncHandler } from "../utils/asyncHandler.js"
 import { ApiError } from "../utils/ApiError.js"
-import { uploadOnCloudinary } from "../utils/cloudinaryUpload.js"
+import { uploadOnCloudinary, deleteFromCloudinary } from "../utils/cloudinary.js"
 import { User } from "../models/user.models.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
 import jwt from "jsonwebtoken"
@@ -60,7 +60,9 @@ const registerUser = asyncHandler(async (req, res) => {
         password,
         fullName,
         avatar: avatar.url,
+        avatarId: avatar.public_id,
         coverImage: coverImage?.url || "",
+        coverImageId: coverImage?.public_id || "",
         username: username.toLowerCase()
     })
 
@@ -204,12 +206,25 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
     const avatarLocalPath = req.file?.path
 
     if(!avatarLocalPath) throw new ApiError(400,"Unable to find file path.");
+    
+    const user = await User.findById(req.userId);
+
+    if(!user) throw new ApiError("Unable to find user");
 
     const avatar = await uploadOnCloudinary(avatarLocalPath);
 
     if(!avatar) throw new ApiError(400,"Failed to upload file on cloud.");
 
-    const updatedUser = await User.findByIdAndUpdate(req.userId,{ $set : { avatar : avatar?.url}},{new:true})
+    const avatarDeleted = await deleteFromCloudinary(user.avatarId);
+
+    if(!avatarDeleted) console.log("Avatar not deleted from cloud");
+    
+    user.avatar = avatar?.url;
+    user.avatarId = avatar?.public_id;
+
+    const updatedUser = user.save();
+
+    // const updatedUser = await User.findByIdAndUpdate(req.userId,{ $set : { avatar : avatar?.url}},{new:true})
 
     if(!updatedUser) throw new ApiError(500,"User avatar updation failed");
 
@@ -220,12 +235,25 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     const coverImageLocalPath = req.file?.path
 
     if(!coverImageLocalPath) throw new ApiError(400,"Unable to find file path.");
+    
+    const user = await User.findById(req.userId);
+
+    if(!user) throw new ApiError("Unable to find user");
 
     const coverImage = await uploadOnCloudinary(coverImageLocalPath);
 
     if(!coverImage) throw new ApiError(400,"Failed to upload file on cloud.");
+  
+    if(user.coverImageId != ""){
+        const coverImageDeleted = await deleteFromCloudinary(user.coverImageId);
+        
+        if(!coverImageDeleted) console.log("Cover image not deleted from cloud");
+    }
+    
+    user.coverImage = coverImage?.url;
+    user.coverImageId = coverImage?.public_id;
 
-    const updatedUser = await User.findByIdAndUpdate(req.userId,{ $set : { coverImage : coverImage?.url}},{new:true})
+    const updatedUser = user.save();
 
     if(!updatedUser) throw new ApiError(500,"User coverImage updation failed");
 
@@ -349,7 +377,16 @@ const getUserWatchHistory = asyncHandler(async (req, res) => {
 const deleteUser = asyncHandler(async (req, res) => {
     const userId = req.userId;
 
-    await User.findByIdAndDelete({_id:userId});
+    const deletedUser = await User.findByIdAndDelete({_id:userId});
+
+    if(deletedUser){
+        const avatarDeleted = await deleteFromCloudinary(deletedUser.avatarId);
+        if(!avatarDeleted) console.log("Avatar not deleted from cloud");
+        if(deletedUser.coverImageId != ""){
+            const coverImageDeleted = await deleteFromCloudinary(deletedUser.coverImageId);
+            if(!coverImageDeleted) console.log("Cover image not deleted from cloud");     
+        }   
+    }
 
     const cookieOptions = {
         httpOnly:true,

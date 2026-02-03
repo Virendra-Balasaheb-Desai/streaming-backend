@@ -10,7 +10,15 @@ const videoSchema = new Schema(
             type:String,
             required:[true,"Video file is required"]
         },
+        videoFileId:{
+            type:String,
+            required:[true,"Video file id is required"]
+        },
         thumbnail:{
+            type:String,
+            required: true
+        },
+        thumbnailId:{
             type:String,
             required: true
         },

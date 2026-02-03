@@ -1,10 +1,9 @@
 import mongoose, { isValidObjectId } from "mongoose"
 import { Video } from "../models/video.models.js"
-import { User } from "../models/user.models.js"
 import { ApiError } from "../utils/ApiError.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
 import { asyncHandler } from "../utils/asyncHandler.js"
-import { uploadOnCloudinary } from "../utils/cloudinaryUpload.js"
+import { uploadOnCloudinary, deleteFromCloudinary } from "../utils/cloudinary.js"
 
 
 const getAllVideos = asyncHandler(async (req, res) => {
@@ -90,7 +89,9 @@ const publishAVideo = asyncHandler(async (req, res) => {
         description,
         owner,
         videoFile: video?.url,
+        videoFileId: video?.public_id,
         thumbnail: thumbnail?.url,
+        thumbnailId: thumbnail?.public_id,
         duration: video?.duration
     })
 
@@ -169,11 +170,19 @@ const updateVideoThumbnail = asyncHandler(async (req, res) => {
 
     const videoData = await Video.findById(videoId);
 
+    if(!videoData) throw new ApiError("Unable to find video");
+
     if(ownerId != videoData.owner) throw new ApiError(402,"Unauthorized request");
     
     const uploadedThumbnail = await uploadOnCloudinary(thumbnailPath);
     
     if (!uploadedThumbnail) throw new ApiError(401, "Unable to upload thumbnail on cloud");
+
+    const thumbnailDeleted = await deleteFromCloudinary(videoData.thumbnailId);
+
+    if(!thumbnailDeleted) console.log("Thumbnail not deleted from cloud");
+
+    videoData.thumbnailId = uploadedThumbnail?.public_id;
 
     videoData.thumbnail = uploadedThumbnail?.url;
 
@@ -191,16 +200,24 @@ const deleteVideo = asyncHandler(async (req, res) => {
     //TODO: delete video
     if (!videoId) throw new ApiError(401, "Unable to get video");
 
-    const deletedVideo = await Video.findById(videoId);
-
     const videoData = await Video.findById(videoId);
+
+    if(!videoData) throw new ApiError("Unable to find video");
 
     if(ownerId != videoData.owner) throw new ApiError(402,"Unauthorized request");    
 
-    const deleteVideo = await Video.findByIdAndDelete(videoId);
+    const deletedVideo = await Video.findByIdAndDelete(videoId);
 
-    if(!deleteVideo) throw new ApiError(401,"Unable to delete video");
+    if(!deletedVideo) throw new ApiError(401,"Unable to delete video");
 
+    const thumbnailDeleted = await deleteFromCloudinary(deletedVideo.thumbnailId);
+
+    if(!thumbnailDeleted) console.log("Thumbnail not deleted from cloud");
+    
+    const videoFileDeleted = await deleteFromCloudinary(deletedVideo.videoFileId,"video");
+    
+    if(!videoFileDeleted) console.log("Video not deleted from cloud");
+    
     return res.status(200).json(new ApiResponse(200,deletedVideo,"Video deleted successful"));
  
 })
