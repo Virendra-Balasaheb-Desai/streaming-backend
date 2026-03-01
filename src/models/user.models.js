@@ -7,6 +7,7 @@ import { Like } from "./like.models.js";
 import { Playlist } from "./playlist.models.js";
 import { Subscription } from "./subscription.models.js"
 import { Tweet } from "./tweet.models.js";
+import { deleteFromCloudinary } from "../utils/cloudinary.js";
 
 const userSchema = new Schema(
     {
@@ -104,25 +105,42 @@ userSchema.methods.generateRefreshToken = function () {
 
 //Clean up after deletion like ON DELETE CASCADE
 userSchema.post("findOneAndDelete", async function() {
-    const userId = this.getFilter()._id;
-    await Comment.deleteMany({
-        owner: userId
-    });
-    await Video.deleteMany({
-        owner: userId
-    });
-    await Tweet.deleteMany({
-        owner: userId
-    });
-    await Playlist.deleteMany({
-        owner: userId
-    });
-    await Subscription.deleteMany({
-        channel: userId
-    });
-    await Like.deleteMany({
-        likeBy: userId
-    });
+    try {
+        const userId = this.getFilter()._id;
+        await Comment.deleteMany({
+            owner: userId
+        });
+
+        const userVideos = await Video.find({
+            owner: userId
+        });
+        // delete files from cloud as well.
+        userVideos.forEach(async video => {
+            const thumbnail = await deleteFromCloudinary(video.thumbnailId);
+            if(!thumbnail) console.log("From user clean up, thumbail not deleted.");
+            const videoFile = await deleteFromCloudinary(video.videoFileId,"video");
+            if(!videoFile) console.log("From user clean up, video file not deleted.");
+        })
+        // after deletion of files from cloud, delete entries from DB.
+        await Video.deleteMany({
+            owner: userId
+        });   
+             
+        await Tweet.deleteMany({
+            owner: userId
+        });
+        await Playlist.deleteMany({
+            owner: userId
+        });
+        await Subscription.deleteMany({
+            channel: userId
+        });
+        await Like.deleteMany({
+            likeBy: userId
+        });
+    } catch (error) {
+        console.log("After user deletion cleap up function error : ",error);
+    }
 })
 
 export const User = model("User", userSchema)

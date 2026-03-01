@@ -27,11 +27,15 @@ commentSchema.plugin(mongooseAggregatePaginate)
 
 //Clean up after deletion like ON DELETE CASCADE
 commentSchema.post("findOneAndDelete", async function (doc) {
-    const commentId = doc._id;
-    
-    await Like.deleteMany({
-            comment: commentId
-    });
+    try{
+        const commentId = doc._id;
+        
+        await Like.deleteMany({
+                comment: commentId
+        });
+    } catch (error) {
+        console.log("After comment deletion cleap up function error : ",error);
+    }
 })
 
 export const Comment = mongoose.model("Comment", commentSchema)

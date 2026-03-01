@@ -19,11 +19,15 @@ export const tweetSchema = new mongoose.Schema(
 
 //Clean up after deletion like ON DELETE CASCADE
 tweetSchema.post("findOneAndDelete", async function (doc) {
-    const tweetId = doc._id;
-    
-    await Like.deleteMany({
-            tweet: tweetId
-    });
+    try {
+        const tweetId = doc._id;
+        
+        await Like.deleteMany({
+                tweet: tweetId
+        });
+    } catch (error) {
+        console.log("After tweet deletion cleap up function error : ",error);
+    }
 })
 
 export const Tweet = mongoose.model("Tweet", tweetSchema)

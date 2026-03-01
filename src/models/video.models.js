@@ -57,21 +57,25 @@ videoSchema.plugin(mongooseAggregatePaginate)
 
 //Clean up after deletion like ON DELETE CASCADE
 videoSchema.post("findOneAndDelete", async function (doc) {
-    const videoId = doc._id;
-    await Comment.deleteMany({
-        video: videoId
-    });
-    await Like.deleteMany({
-        video: videoId
-    });
-    await Playlist.updateMany(
-        {},//update all
-        {
-            $pull: {
-                videos: videoId
-            } 
-        }
-    );
+    try {
+        const videoId = doc._id;
+        await Comment.deleteMany({
+            video: videoId
+        });
+        await Like.deleteMany({
+            video: videoId
+        });
+        await Playlist.updateMany(
+            {},//update all
+            {
+                $pull: {
+                    videos: videoId
+                } 
+            }
+        );
+    } catch (error) {
+        console.log("After video deletion cleap up function error : ",error);
+    }
 })
 
 export const Video = model("Video",videoSchema)
