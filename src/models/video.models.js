@@ -1,81 +1,81 @@
-import {Schema,model} from "mongoose";
-import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2"; 
+import { Schema, model } from "mongoose";
+import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2";
 import { Comment } from "./comment.models.js";
 import { Playlist } from "./playlist.models.js";
 import { Like } from "./like.models.js";
 
 const videoSchema = new Schema(
     {
-        videoFile:{
-            type:String,
-            required:[true,"Video file is required"]
+        videoFile: {
+            type: String,
+            required: [true, "Video file is required"],
         },
-        videoFileId:{
-            type:String,
-            required:[true,"Video file id is required"]
+        videoFileId: {
+            type: String,
+            required: [true, "Video file id is required"],
         },
-        thumbnail:{
-            type:String,
-            required: true
+        thumbnail: {
+            type: String,
+            required: true,
         },
-        thumbnailId:{
-            type:String,
-            required: true
+        thumbnailId: {
+            type: String,
+            required: true,
         },
-        owner:{
-            type:Schema.Types.ObjectId,
+        owner: {
+            type: Schema.Types.ObjectId,
             ref: "User",
-            required:true
+            required: true,
         },
-        title:{
-            type:String,
-            required:true
+        title: {
+            type: String,
+            required: true,
         },
-        description:{
-            type:String,
-            required:true
+        description: {
+            type: String,
+            required: true,
         },
-        duration:{
-            type:Number,
-            required:true
+        duration: {
+            type: Number,
+            required: true,
         },
-        views:{
-            type:Number,
-            default: 0
+        views: {
+            type: Number,
+            default: 0,
         },
-        isPublised:{
-            type:Boolean,
-            default: true
+        isPublised: {
+            type: Boolean,
+            default: true,
         },
     },
     {
-        timestamps:true
+        timestamps: true,
     }
-)
+);
 
-videoSchema.plugin(mongooseAggregatePaginate)
+videoSchema.plugin(mongooseAggregatePaginate);
 
 //Clean up after deletion like ON DELETE CASCADE
 videoSchema.post("findOneAndDelete", async function (doc) {
     try {
         const videoId = doc._id;
         await Comment.deleteMany({
-            video: videoId
+            video: videoId,
         });
         await Like.deleteMany({
-            video: videoId
+            video: videoId,
         });
         await Playlist.updateMany(
-            {},//update all
+            {}, //update all
             {
                 $pull: {
-                    videos: videoId
-                } 
+                    videos: videoId,
+                },
             }
         );
     } catch (error) {
-        console.log("After video deletion cleap up function error : ",error);
+        console.log("After video deletion cleap up function error : ", error);
     }
-})
+});
 
-export const Video = model("Video",videoSchema)
+export const Video = model("Video", videoSchema);

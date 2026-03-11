@@ -4,16 +4,16 @@ const subscriptionSchema = new Schema(
     {
         subscriber: {
             type: Schema.Types.ObjectId,
-            ref: "User"
+            ref: "User",
         },
         channel: {
             type: Schema.Types.ObjectId,
-            ref: "User"
-        }
+            ref: "User",
+        },
     },
     {
-        timestamps: true
+        timestamps: true,
     }
-)
+);
 
-export const Subscription = model("Subscription", subscriptionSchema) 
+export const Subscription = model("Subscription", subscriptionSchema);

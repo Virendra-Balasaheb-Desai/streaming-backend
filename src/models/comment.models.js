@@ -7,35 +7,35 @@ const commentSchema = new mongoose.Schema(
     {
         content: {
             type: String,
-            required: true
+            required: true,
         },
         video: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: "Video"
+            ref: "Video",
         },
         owner: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: "User"
-        }
+            ref: "User",
+        },
     },
     {
-        timestamps: true
+        timestamps: true,
     }
-)
+);
 
-commentSchema.plugin(mongooseAggregatePaginate)
+commentSchema.plugin(mongooseAggregatePaginate);
 
 //Clean up after deletion like ON DELETE CASCADE
 commentSchema.post("findOneAndDelete", async function (doc) {
-    try{
+    try {
         const commentId = doc._id;
-        
+
         await Like.deleteMany({
-                comment: commentId
+            comment: commentId,
         });
     } catch (error) {
-        console.log("After comment deletion cleap up function error : ",error);
+        console.log("After comment deletion cleap up function error : ", error);
     }
-})
+});
 
-export const Comment = mongoose.model("Comment", commentSchema)
+export const Comment = mongoose.model("Comment", commentSchema);

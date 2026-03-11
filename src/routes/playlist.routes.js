@@ -1,22 +1,30 @@
 import { Router } from "express";
-import { addVideoToPlaylist, createPlaylist, deletePlaylist, getPlaylistById, getUserPlaylists, removeVideoFromPlaylist, updatePlaylist } from "../controllers/playlist.controllers.js";
-import { verifyToken } from "../middlewares/auth.middlewares.js"
+import {
+    addVideoToPlaylist,
+    createPlaylist,
+    deletePlaylist,
+    getPlaylistById,
+    getUserPlaylists,
+    removeVideoFromPlaylist,
+    updatePlaylist,
+} from "../controllers/playlist.controllers.js";
+import { verifyToken } from "../middlewares/auth.middlewares.js";
 
-const router = Router()
+const router = Router();
 
-router.route("/create")
-    .post(verifyToken,createPlaylist)
+router.route("/create").post(verifyToken, createPlaylist);
 
-router.route("/user/:userId")
-    .get(getUserPlaylists)
+router.route("/user/:userId").get(getUserPlaylists);
 
-router.route("/:playlistId")
+router
+    .route("/:playlistId")
     .get(getPlaylistById)
-    .patch(verifyToken,updatePlaylist)
-    .delete(verifyToken,deletePlaylist)
+    .patch(verifyToken, updatePlaylist)
+    .delete(verifyToken, deletePlaylist);
 
-router.route("/:playlistId/videos/:videoId")
-    .patch(verifyToken,addVideoToPlaylist)
-    .delete(verifyToken,removeVideoFromPlaylist)
+router
+    .route("/:playlistId/videos/:videoId")
+    .patch(verifyToken, addVideoToPlaylist)
+    .delete(verifyToken, removeVideoFromPlaylist);
 
-export default router
+export default router;

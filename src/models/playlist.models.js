@@ -5,26 +5,26 @@ const playlistSchema = new mongoose.Schema(
         name: {
             type: String,
             required: true,
-            unique: true
+            unique: true,
         },
         description: {
             type: String,
-            required: true
+            required: true,
         },
         videos: [
             {
                 type: mongoose.Schema.Types.ObjectId,
-                ref: "Video"
-            }
+                ref: "Video",
+            },
         ],
         owner: {
-            type : mongoose.Schema.Types.ObjectId,
-            ref: "User"
-        }
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+        },
     },
     {
-        timestamps: true
+        timestamps: true,
     }
-)
+);
 
-export const Playlist = mongoose.model("Playlist", playlistSchema)
+export const Playlist = mongoose.model("Playlist", playlistSchema);
