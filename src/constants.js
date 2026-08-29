@@ -1,2 +1,4 @@
-export const DBNAME = "streaming";
-export const PORT = process.env.PORT || 4000;
+import config from "../config/config.js";
+
+export const DBNAME = config.DB_NAME;
+export const PORT = config.PORT || 4000;

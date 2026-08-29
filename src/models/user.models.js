@@ -8,6 +8,7 @@ import { Playlist } from "./playlist.models.js";
 import { Subscription } from "./subscription.models.js";
 import { Tweet } from "./tweet.models.js";
 import { deleteFromCloudinary } from "../utils/cloudinary.js";
+import config from "../../config/config.js";
 
 const userSchema = new Schema(
     {
@@ -83,9 +84,9 @@ userSchema.methods.generateAccessToken = function () {
             fullName: this.fullName,
             email: this.email,
         },
-        process.env.ACCESS_TOKEN_SECRET,
+        config.ACCESS_TOKEN_SECRET,
         {
-            expiresIn: process.env.ACCESS_TOKEN_EXPIRY,
+            expiresIn: config.ACCESS_TOKEN_EXPIRY,
         }
     );
 };
@@ -95,9 +96,9 @@ userSchema.methods.generateRefreshToken = function () {
         {
             _id: this._id,
         },
-        process.env.REFRESH_TOKEN_SECRET,
+        config.REFRESH_TOKEN_SECRET,
         {
-            expiresIn: process.env.REFRESH_TOKEN_EXPIRY,
+            expiresIn: config.REFRESH_TOKEN_EXPIRY,
         }
     );
 };

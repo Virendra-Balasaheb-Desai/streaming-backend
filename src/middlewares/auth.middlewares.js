@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
+import config from "../../config/config.js";
 
 export const verifyToken = asyncHandler(async (req, _, next) => {
     const token =
@@ -12,7 +13,7 @@ export const verifyToken = asyncHandler(async (req, _, next) => {
     let deocodedPayload;
 
     try {
-        deocodedPayload = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+        deocodedPayload = jwt.verify(token, config.ACCESS_TOKEN_SECRET);
     } catch (error) {
         throw new ApiError(401, "Invalid token");
     }
