@@ -1,5 +1,13 @@
 # Video Streaming Backend API
 
+## Frontend
+The frontend is a separate React application that consumes the APIs provided by this backend.
+
+https://github.com/Virendra-Balasaheb-Desai/streaming-frontend
+
+## Backend
+
+
 A scalable backend for a **video streaming platform (similar to YouTube)** built using **Node.js, Express, and MongoDB**.
 The project implements RESTful APIs for managing videos, comments, tweets, authentication, and file uploads.
 
