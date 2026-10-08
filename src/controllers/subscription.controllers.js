@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { Subscription } from "../models/subscription.models.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
@@ -24,7 +25,7 @@ const toggleSubscription = asyncHandler(async (req, res) => {
         if (!subscribe) throw new ApiError(401, "Unable to subscribe channel");
         return res
             .status(200)
-            .json(new ApiResponse(200, {}, "Channel subscribed successfully."));
+            .json(new ApiResponse(200, { subscribed: true }, "Channel subscribed successfully."));
     } else {
         const unsubscribe = await Subscription.findByIdAndDelete(
             subscribed._id
@@ -34,7 +35,7 @@ const toggleSubscription = asyncHandler(async (req, res) => {
         return res
             .status(200)
             .json(
-                new ApiResponse(200, {}, "Channel unsubscribed successfully.")
+                new ApiResponse(200, { subscribed: false }, "Channel unsubscribed successfully.")
             );
     }
 });
@@ -76,24 +77,58 @@ const getSubscribedChannels = asyncHandler(async (req, res) => {
     if (!subscriberId || !subscriberId.trim())
         throw new ApiError(401, "Unable to get subscriber");
 
-    const subscribedChannels = await Subscription.find({
-        subscriber: subscriberId,
-    });
+    const subscribedChannels = await Subscription.aggregate([
+        {
+            $match: {
+                subscriber: new mongoose.Types.ObjectId(subscriberId)
+            }
+        },
+        {
+            $lookup: {
+                from: "users",
+                localField: "channel",
+                foreignField: "_id",
+                as: "subscribed",
+                pipeline:[
+                    {
+                        $lookup: {
+                            from: "subscriptions",
+                            localField: "_id",
+                            foreignField: "channel",
+                            as: "subscriber",
+                        }
+                    },
+                    {
+                        $project : {
+                            _id: 1,
+                            fullName: 1,
+                            avatar: 1,
+                            username:1,
+                            subscribers: {
+                                $size: "$subscriber"
+                            }
+                        }
+                    }
+                ]
+            },
+        },
+        {
+            $project:{
+                subscribed:1
+            }
+        }
+    ]);
 
     if (!subscribedChannels)
         throw new ApiError(401, "Unable to get subscribed of channels");
 
-    const data = {
-        totalSubscribedChannels: subscribedChannels.length,
-        subscribedChannels,
-    };
 
     return res
         .status(200)
         .json(
             new ApiResponse(
                 200,
-                data,
+                subscribedChannels,
                 "Subscribed channels fetched successfully."
             )
         );

@@ -17,12 +17,43 @@ const getVideoComments = asyncHandler(async (req, res) => {
     if (!videoId || !videoId.trim())
         throw new ApiError(401, "Unable to get video.");
 
+    if (!mongoose.Types.ObjectId.isValid(videoId))
+        throw new ApiError(400, "Invalid video ID");
+
     const pipeline = Comment.aggregate([
         {
             $match: {
                 video: new mongoose.Types.ObjectId(videoId),
             },
         },
+        {
+            $lookup:{
+                from: "users",
+                localField: "owner",
+                foreignField: "_id",
+                as: "owner",
+                pipeline:[
+                    {
+                        $project: {
+                            _id: 1,
+                            username:1,
+                            avatar:1,
+                            fullName:1,
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $addFields: {
+                owner: { $arrayElemAt: ["$owner", 0] },
+            }
+        },
+        {
+            $sort: {
+                createdAt: -1,
+            }
+        }
     ]);
 
     const paginatedComments = await Comment.aggregatePaginate(

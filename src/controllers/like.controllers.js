@@ -25,14 +25,14 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
         if (!like) throw new ApiError(401, "Unable to like the video");
         return res
             .status(200)
-            .json(new ApiResponse(200, {}, "Video liked successfully."));
+            .json(new ApiResponse(200, { liked:true }, "Video liked successfully."));
     } else {
         const removeLike = await Like.findByIdAndDelete(liked._id);
         if (!removeLike)
             throw new ApiError(401, "Unable to remove like from video");
         return res
             .status(200)
-            .json(new ApiResponse(200, {}, "Video like removed successfully."));
+            .json(new ApiResponse(200, { liked:false }, "Video like removed successfully."));
     }
 });
 

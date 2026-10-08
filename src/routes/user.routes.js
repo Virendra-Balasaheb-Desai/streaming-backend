@@ -12,6 +12,7 @@ import {
     getUserChannelDetails,
     getUserWatchHistory,
     deleteUser,
+    addVideoToWatchHistory,
 } from "../controllers/users.controllers.js";
 import { upload } from "../middlewares/multer.middlewares.js";
 import { verifyToken } from "../middlewares/auth.middlewares.js";
@@ -38,7 +39,7 @@ router.route("/logout").post(verifyToken, logoutUser);
 
 router.route("/refreshtoken").post(refreshAccessToken);
 
-router.route("/change-password").post(verifyToken, changeUserPassword);
+router.route("/change-password").patch(verifyToken, changeUserPassword);
 
 router.route("/get-user").get(verifyToken, getCurrentUser);
 
@@ -54,7 +55,9 @@ router
 
 router.route("/channel/:username").get(getUserChannelDetails);
 
-router.route("/watch-history").get(verifyToken, getUserWatchHistory);
+router.route("/channel/protected/:username").get(verifyToken, getUserChannelDetails);
+
+router.route("/watch-history").get(verifyToken, getUserWatchHistory).post(verifyToken,addVideoToWatchHistory);
 
 router.route("/delete").delete(verifyToken, deleteUser);
 

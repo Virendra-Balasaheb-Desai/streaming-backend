@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { Tweet } from "../models/tweet.models.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
@@ -28,9 +29,51 @@ const getUserTweets = asyncHandler(async (req, res) => {
 
     if (!userId) throw new ApiError(401, "Unable to get tweets, invalid user");
 
-    const tweets = await Tweet.find({
-        owner: userId,
-    });
+    const pipeline = [
+        {
+            $match: {
+                owner: new mongoose.Types.ObjectId(userId)
+            }
+        },
+        {
+            $lookup: {
+                from: "users",
+                localField: "owner",
+                foreignField: "_id",
+                as: "owner",
+                pipeline: [
+                    {
+                        $project: {
+                            _id: 1,
+                            username: 1,
+                            avatar: 1,
+                            fullName: 1
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $lookup: {
+                from: "likes",
+                localField: "_id",
+                foreignField: "tweet",
+                as: "likes"
+            }
+        },
+        {
+            $addFields: {
+                likeCount: { $size: "$likes" }
+            }
+        },
+        {
+            $project: {
+                likes: 0
+            }
+        }
+    ]
+
+    const tweets = await Tweet.aggregate(pipeline);
 
     if (!tweets) throw new ApiError(401, "Unable to get tweets.");
 

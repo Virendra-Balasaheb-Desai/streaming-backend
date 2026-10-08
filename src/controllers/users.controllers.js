@@ -8,6 +8,8 @@ import { User } from "../models/user.models.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
+import config from "../../config/config.js";
+import { Video } from "../models/video.models.js";
 
 const generateTokens = async (user) => {
     try {
@@ -28,6 +30,17 @@ const generateTokens = async (user) => {
     } catch (error) {
         throw new ApiError(501, "Token generation error");
     }
+};
+
+const cookieOptions = {
+    httpOnly: true,
+    secure: true,
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+};
+
+const clearCookieOptions = {
+    httpOnly: true,
+    secure: true,
 };
 
 const registerUser = asyncHandler(async (req, res) => {
@@ -116,11 +129,6 @@ const loginUser = asyncHandler(async (req, res) => {
 
     const userData = await generateTokens(userExists);
 
-    const cookieOptions = {
-        httpOnly: true,
-        secure: true,
-    };
-
     return res
         .status(200)
         .cookie("accessToken", userData.accessToken, cookieOptions)
@@ -133,15 +141,10 @@ const logoutUser = asyncHandler(async (req, res) => {
 
     await User.findByIdAndUpdate(userId, { $set: { refreshToken: undefined } });
 
-    const cookieOptions = {
-        httpOnly: true,
-        secure: true,
-    };
-
     return res
         .status(200)
-        .cookie("accessToken", "", cookieOptions)
-        .cookie("refreshToken", "", cookieOptions)
+        .cookie("accessToken", "", clearCookieOptions)
+        .cookie("refreshToken", "", clearCookieOptions)
         .json(new ApiResponse(200, "", "Logout successfull"));
 });
 
@@ -152,12 +155,16 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 
     let decodedToken;
     try {
-        decodedToken = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET);
+        decodedToken = jwt.verify(token, config.REFRESH_TOKEN_SECRET);
     } catch (error) {
         throw new ApiError(401, "Invalid token");
     }
 
     const userData = await User.findById(decodedToken?._id);
+
+    if (!userData) {
+        throw new ApiError(401, "User not found or session has been invalidated");
+    }
 
     if (token !== userData.refreshToken)
         throw new ApiError(401, "Unmatched token");
@@ -165,11 +172,6 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     const user = await generateTokens(userData);
 
     if (!user) throw new ApiError(401, "Failed to generate token");
-
-    const cookieOptions = {
-        httpOnly: true,
-        secure: true,
-    };
 
     return res
         .status(200)
@@ -305,14 +307,14 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
 
 const getUserChannelDetails = asyncHandler(async (req, res) => {
     const { username } = req.params;
-    console.log(username);
+    console.log("id : ",username);
 
     if (!username?.trim()) throw new ApiError(401, "Username is required");
 
     const userChannnel = await User.aggregate([
         {
             $match: {
-                username: username?.toLowerCase(),
+                _id: new mongoose.Types.ObjectId(username),
             },
         },
         {
@@ -342,7 +344,7 @@ const getUserChannelDetails = asyncHandler(async (req, res) => {
                 isSubscriber: {
                     $cond: {
                         if: {
-                            $in: [req.userId || 0, "$subscribers.subscriber"],
+                            $in: [req.userId? new mongoose.Types.ObjectId(req.userId) : 0 , "$subscribers.subscriber"],
                         },
                         then: true,
                         else: false,
@@ -372,7 +374,7 @@ const getUserChannelDetails = asyncHandler(async (req, res) => {
         .json(
             new ApiResponse(
                 200,
-                userChannnel[0],
+                userChannnel.length > 0 ? userChannnel[0] : null,
                 "Channel details fetched successful."
             )
         );
@@ -434,6 +436,23 @@ const getUserWatchHistory = asyncHandler(async (req, res) => {
         );
 });
 
+const addVideoToWatchHistory = asyncHandler(async (req, res) => {
+    const {videoId} = req.body;
+
+    if(!videoId) throw new ApiError(400,"Video is required");
+    const video = await Video.findById(videoId);
+
+    if(!video) throw new ApiError(400,"Video not found");
+    const user = await User.findById(req.userId);
+
+    if(!user) throw new ApiError(400,"User not found");
+
+    user.watchHistory.push(videoId);
+    await user.save();
+
+    return res.status(200).json(new ApiResponse(200,{},"Video added to watch history successful."));
+});
+
 const deleteUser = asyncHandler(async (req, res) => {
     const userId = req.userId;
 
@@ -451,15 +470,10 @@ const deleteUser = asyncHandler(async (req, res) => {
         }
     }
 
-    const cookieOptions = {
-        httpOnly: true,
-        secure: true,
-    };
-
     return res
         .status(200)
-        .cookie("accessToken", "", cookieOptions)
-        .cookie("refreshToken", "", cookieOptions)
+        .cookie("accessToken", "", clearCookieOptions)
+        .cookie("refreshToken", "", clearCookieOptions)
         .json(new ApiResponse(200, "", "Deleted user account successfully"));
 });
 
@@ -475,5 +489,6 @@ export {
     updateUserCoverImage,
     getUserChannelDetails,
     getUserWatchHistory,
+    addVideoToWatchHistory,
     deleteUser,
 };

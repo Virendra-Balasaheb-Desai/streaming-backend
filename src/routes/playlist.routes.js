@@ -5,6 +5,7 @@ import {
     deletePlaylist,
     getPlaylistById,
     getUserPlaylists,
+    getUserPlaylistList,
     removeVideoFromPlaylist,
     updatePlaylist,
 } from "../controllers/playlist.controllers.js";
@@ -15,6 +16,7 @@ const router = Router();
 router.route("/create").post(verifyToken, createPlaylist);
 
 router.route("/user/:userId").get(getUserPlaylists);
+router.route("/user").get(verifyToken, getUserPlaylistList);
 
 router
     .route("/:playlistId")
@@ -24,7 +26,7 @@ router
 
 router
     .route("/:playlistId/videos/:videoId")
-    .patch(verifyToken, addVideoToPlaylist)
+    .post(verifyToken, addVideoToPlaylist)
     .delete(verifyToken, removeVideoFromPlaylist);
 
 export default router;
